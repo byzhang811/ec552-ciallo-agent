@@ -1,0 +1,28 @@
+{
+  "library_name": "eco_demo_custom_library",
+  "base_version": "Eco1C1G1T1",
+  "custom_input_sensors": [
+    {
+      "name": "BlueLight_sensor",
+      "promoter_name": "pBlue",
+      "promoter_sequence": "ATGCGTATGCGTATGCGTATGCGTATGCGT",
+      "ymax": 2.2,
+      "ymin": 0.02,
+      "alpha": 0.7,
+      "beta": 0.3
+    }
+  ],
+  "custom_output_devices": [
+    {
+      "name": "BFP_reporter",
+      "cassette_name": "BFP_cassette",
+      "cassette_sequence": "ATGGCTAGCGCTAGCGCTAGCGCTAGCGCTAGCGCTAA",
+      "unit_conversion": 0.6,
+      "input_count": 2
+    }
+  ],
+  "notes": [
+    "This demo extends the official Eco1C1G1T1 base library with one custom sensor and one custom reporter.",
+    "The gate UCF is still copied from the official base library."
+  ]
+}

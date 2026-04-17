@@ -1,0 +1,30 @@
+{
+  "design_name": "Arabinose IPTG AND Biosensor",
+  "summary": "Build a two-input AND biosensor that turns on YFP only when arabinose and IPTG are both present.",
+  "target_chassis": "Eco",
+  "logic_operator": "AND",
+  "input_signals": [
+    {
+      "logical_name": "arabinose",
+      "description": "Arabinose-inducible input branch.",
+      "signal_name": "arabinose"
+    },
+    {
+      "logical_name": "iptg",
+      "description": "IPTG-inducible input branch.",
+      "signal_name": "IPTG"
+    }
+  ],
+  "output_signal": {
+    "logical_name": "y",
+    "description": "YFP reporter output.",
+    "signal_name": "YFP"
+  },
+  "constraints": [
+    "Prefer official local Eco sensors and reporters.",
+    "Keep the circuit compact for a first-pass demo."
+  ],
+  "notes": [
+    "This brief is intentionally structured so the front-end can avoid LLM dependence."
+  ]
+}
