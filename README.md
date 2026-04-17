@@ -126,6 +126,14 @@ Result:
 
 Use this prompt when you want a quick sanity check that the front-end bundle generation still works without touching UCF.
 
+## Studio Preview
+
+The local studio keeps the main flow simple and puts the advanced pieces behind a foldout.
+
+![Ciallo Studio home screen](docs/images/studio-home.png)
+
+![Ciallo Studio run summary](docs/images/studio-run-summary.png)
+
 ## UCF Support
 
 The studio can also produce UCF JSON drafts when the request, paper, or custom fragment contains enough grounded detail for a supported extension path.
