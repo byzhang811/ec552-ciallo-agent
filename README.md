@@ -134,6 +134,21 @@ The local studio keeps the main flow simple and puts the advanced pieces behind 
 
 ![Ciallo Studio run summary](docs/images/studio-run-summary.png)
 
+## Sample Artifacts
+
+The canonical official-library smoke test is bundled here as a small example set:
+
+- [docs/examples/verified-official-baseline/README.md](docs/examples/verified-official-baseline/README.md)
+- `design_spec.json`
+- `e_coli_biosensor.v`
+- `Eco1C1G1T1.input.json`
+- `Eco1C1G1T1.output.json`
+- `summary.md`
+- `manifest.json`
+- `cello_output/e_coli_biosensor.json`
+- `cello_output/e_coli_biosensor.edif`
+- `cello_output/log.log`
+
 ## UCF Support
 
 The studio can also produce UCF JSON drafts when the request, paper, or custom fragment contains enough grounded detail for a supported extension path.

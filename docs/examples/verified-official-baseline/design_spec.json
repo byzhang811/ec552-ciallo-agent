@@ -1,0 +1,42 @@
+{
+  "design_name": "E. coli Compact Biosensor",
+  "summary": "Design a compact E. coli biosensor using the official library and output YFP.",
+  "target_chassis": "Eco",
+  "inputs": [
+    {
+      "name": "in1",
+      "description": "Input signal for the biosensor, controlled by LacI.",
+      "preferred_sensor": "LacI_sensor"
+    },
+    {
+      "name": "output_out",
+      "description": "Input signal 2 extracted from the natural-language request.",
+      "preferred_sensor": "TetR_sensor"
+    }
+  ],
+  "output": {
+    "name": "out",
+    "description": "Output signal representing YFP expression.",
+    "preferred_device": "YFP_reporter"
+  },
+  "logic_description": "The biosensor activates YFP expression in response to the presence of the input signal controlled by LacI.",
+  "verilog_module_name": "e_coli_biosensor",
+  "verilog_code": "module E_coli_Biosensor(input in1, output out);\nassign out = in1;\nendmodule\n",
+  "selected_sensor_names": [
+    "LacI_sensor",
+    "TetR_sensor"
+  ],
+  "selected_output_device_name": "YFP_reporter",
+  "constraints": [
+    "Review gate count, chassis fit, and reporter compatibility before compilation."
+  ],
+  "custom_part_requests": [],
+  "validation_checks": [
+    "Check for proper sensor availability in Eco chassis.",
+    "Verify YFP output functionality.",
+    "Validate generated input/output/UCF JSON files against the official Cello schemas.",
+    "Confirm the chosen library has enough compatible sensors and reporter devices.",
+    "Run Docker-based Cello compilation and inspect generated output artifacts."
+  ],
+  "manual_review_notes": []
+}

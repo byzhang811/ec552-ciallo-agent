@@ -1,0 +1,20 @@
+{
+  "run_name": "e_coli_compact_biosensor",
+  "run_directory": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor",
+  "source_library_version": "Eco1C1G1T1",
+  "source_library_chassis": "Eco",
+  "verilog_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/e_coli_biosensor.v",
+  "input_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/Eco1C1G1T1.input.json",
+  "output_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/Eco1C1G1T1.output.json",
+  "ucf_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/Eco1C1G1T1.UCF.json",
+  "options_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/options.csv",
+  "spec_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/design_spec.json",
+  "summary_file": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/summary.md",
+  "cello_output_dir": "/Users/byzhang/Desktop/EC552 Project/outputs/generated/design_sessions/design_a_compact_e_coli_biosensor_using_the_official_library_and_output_yfp/design_bundle/e_coli_compact_biosensor/cello_output",
+  "selected_sensors": [
+    "LacI_sensor",
+    "TetR_sensor"
+  ],
+  "selected_output_device": "YFP_reporter",
+  "warnings": []
+}
