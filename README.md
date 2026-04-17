@@ -14,9 +14,10 @@ The goal is to help you turn natural-language synthetic biology design requests 
 The current implementation is intentionally conservative:
 
 - it uses the official `CIDARLAB/Cello-v2` repository as the local source of truth
-- it retrieves from the official sample `v2` libraries before attempting any custom UCF generation
+- it uses the official sample `v2` libraries as the default path
+- it can generate schema-valid UCF JSON drafts when the request or paper contains enough grounded biological detail
 - it validates generated JSON files against the official Cello JSON schemas
-- it keeps custom UCF work as a follow-up skeleton instead of inventing invalid biological entries
+- it keeps custom UCF work as an extension path instead of inventing invalid biological entries
 
 ## Project Layout
 
@@ -107,7 +108,7 @@ It also shows a base-vs-generated UCF diff, a JSON editor for the generated draf
 
 ## Verified Run
 
-The most reliable end-to-end test we have run so far uses the official local library and does **not** modify UCF.
+The canonical smoke test for this project uses the official local library and does **not** modify UCF.
 
 Prompt:
 
@@ -124,6 +125,14 @@ Result:
 - the run selected `LacI_sensor`, `TetR_sensor`, and `YFP_reporter`
 
 Use this prompt when you want a quick sanity check that the front-end bundle generation still works without touching UCF.
+
+## UCF Support
+
+The studio can also produce UCF JSON drafts when the request, paper, or custom fragment contains enough grounded detail for a supported extension path.
+
+- If the input is rich enough, the generated UCF draft can be parsed by Cello and used as an extension candidate.
+- If the input is too sparse or internally inconsistent, the studio should stop early and ask for more evidence instead of pretending the UCF is trustworthy.
+- In practice, this means the official-library path is the default stable path, and UCF generation is the optional advanced path.
 
 ## What The CLI Does
 
@@ -172,7 +181,7 @@ Use this prompt when you want a quick sanity check that the front-end bundle gen
 - captures extracted, inferred, and missing fields separately
 - also writes `input_sensor_draft.json`, `output_device_draft.json`, and `ucf_fragment.json`
 - attempts to convert sequence-backed sensor/output candidates into a custom library bundle
-- now emits gate/model/structure/function draft entries even when a fully schema-valid custom library cannot yet be authored
+- emits gate/model/structure/function draft entries when the source contains enough evidence for a draft UCF extension
 
 `design`
 
@@ -193,13 +202,11 @@ Use this prompt when you want a quick sanity check that the front-end bundle gen
 ## Current Limitations
 
 - The scaffold does not yet synthesize brand-new UCF biological parts from SynBioHub or SBOL.
-- Custom library requests are collected into a `ucf_customization.todo.json` file for later completion.
 - Cello execution currently assumes the official Docker image.
 - A local Docker daemon must be running before `--run-cello` can work.
 - `author-library` currently supports custom input sensors and output reporters, but it still copies the base official UCF for gates and placement rules.
-- `paper-to-ucf` and `design` now emit richer UCF fragments, but those gate/model/function drafts are still not guaranteed to satisfy the full official UCF schema without more domain-specific normalization.
-- Automatic custom library authoring still depends on sequence-backed sensor or output entries; when the source lacks sequence data, the pipeline stops at a draft artifact layer instead of a fully compiled custom library.
-- The official-library path is now the primary stable path. If the selected library is not sufficient, the studio can stop early and ask for an extension instead of pretending the base UCF can handle it.
+- Draft UCF generation is only reliable when the request or paper contains enough grounded detail; otherwise the studio should stop early and request more evidence.
+- The official-library path is the primary stable path. If the selected library is not sufficient, the studio should ask for an extension instead of pretending the base UCF can handle it.
 
 ## Recommended Next Steps
 
