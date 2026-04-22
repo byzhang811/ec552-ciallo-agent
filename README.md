@@ -231,7 +231,7 @@ The studio can also produce UCF JSON drafts when the request, paper, or custom f
 - Draft UCF generation is only reliable when the request or paper contains enough grounded detail; otherwise the studio should stop early and request more evidence.
 - The official-library path is the primary stable path. If the selected library is not sufficient, the studio should ask for an extension instead of pretending the base UCF can handle it.
 
-## Recommended Next Steps
+## Future Work
 
 1. Keep `compile-brief` as the production-safe front-end path and use `plan` as the friendly natural-language layer.
 2. Add a real parts database layer from SynBioHub or your own curated lab tables.
