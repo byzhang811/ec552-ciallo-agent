@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -67,7 +68,9 @@ def _slugify(text: str, fallback: str = "studio_run") -> str:
 
 
 def _load_json(path: Path) -> Any:
-    return json.loads(path.read_text())
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return json.loads(text)
 
 
 def _path_is_allowed(path: Path, roots: list[Path]) -> bool:
@@ -88,6 +91,8 @@ def _safe_file_response(path: Path, settings: Settings) -> FileResponse:
         raise HTTPException(status_code=403, detail="The requested file is outside the allowed workspace roots.")
     if not path.exists():
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
+    if not path.is_file():
+        raise HTTPException(status_code=400, detail=f"Path is not a file: {path}")
     return FileResponse(path)
 
 
@@ -215,7 +220,27 @@ def _bootstrap_payload(settings: Settings, library: CelloLibraryIndex) -> dict[s
 
 
 def _load_ucf_json(path: Path) -> list[dict[str, Any]]:
-    return json.loads(path.read_text())
+    text = path.read_text(encoding="utf-8")
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    return json.loads(text)
+
+
+def _pick_cello_output_file(cello_output_dir: str) -> str:
+    if not cello_output_dir:
+        return ""
+    path = Path(cello_output_dir)
+    if not path.exists() or not path.is_dir():
+        return ""
+    for preferred in ("log.log",):
+        candidate = path / preferred
+        if candidate.exists() and candidate.is_file():
+            return str(candidate)
+    for pattern in ("*.json", "*.edif", "*.txt", "*.log"):
+        matches = sorted(path.glob(pattern))
+        for match in matches:
+            if match.is_file():
+                return str(match)
+    return ""
 
 
 def _selected_base_version(result: Any, default: str) -> str:
@@ -363,16 +388,18 @@ def _build_response_payload(
         "ucf_diff": diff,
     }
     if manifest is not None:
+        manifest_file = str(Path(run_directory) / "manifest.json") if run_directory else ""
+        cello_output_file = _pick_cello_output_file(getattr(manifest, "cello_output_dir", ""))
         payload["design_artifacts"] = {
             "run_directory": run_directory,
-            "manifest": getattr(manifest, "run_directory", ""),
+            "manifest": manifest_file,
             "spec": getattr(manifest, "spec_file", ""),
             "verilog": getattr(manifest, "verilog_file", ""),
             "input": getattr(manifest, "input_file", ""),
             "output": getattr(manifest, "output_file", ""),
             "options": getattr(manifest, "options_file", ""),
             "summary": getattr(manifest, "summary_file", ""),
-            "cello_output": getattr(manifest, "cello_output_dir", ""),
+            "cello_output": cello_output_file,
         }
     if extra:
         payload.update(extra)
@@ -393,7 +420,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
 
     @app.get("/", response_class=HTMLResponse)
     def index() -> FileResponse:
-        html = (assets_dir / "index.html").read_text()
+        html = (assets_dir / "index.html").read_text(encoding="utf-8")
         html = html.replace("/assets/styles.css", style_asset)
         html = html.replace("/assets/app.js", app_asset)
         response = HTMLResponse(html)
@@ -472,13 +499,13 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                         "brief": json.loads(brief.model_dump_json()),
                         "spec": json.loads(spec.model_dump_json()),
                         "artifacts": {
-                            "manifest": result.manifest.run_directory + "/manifest.json",
-                            "spec": result.manifest.run_directory + "/design_spec.json",
+                            "manifest": str(Path(result.manifest.run_directory) / "manifest.json"),
+                            "spec": result.manifest.spec_file,
                             "input": result.manifest.input_file,
                             "output": result.manifest.output_file,
                             "ucf": result.manifest.ucf_file,
                             "summary": result.manifest.summary_file,
-                            "cello_output": result.manifest.cello_output_dir,
+                            "cello_output": _pick_cello_output_file(result.manifest.cello_output_dir),
                         },
                     },
                 )
@@ -571,7 +598,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 extension_needed, extension_reasons = _library_extension_needed(design_result)
                 execution_result, execution_error = _maybe_run_cello(
                     design_pipeline.pipeline,
-                    design_result,
+                    design_result.pipeline_result,
                     requested=run_cello,
                     extension_needed=extension_needed,
                 )
@@ -627,7 +654,6 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 )
                 return JSONResponse(response)
 
-            # default pure natural language flow
             design_pipeline = DesignFromSourcesPipeline(settings)
             design_result = design_pipeline.run(
                 request_text,
@@ -639,7 +665,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             extension_needed, extension_reasons = _library_extension_needed(design_result)
             execution_result, execution_error = _maybe_run_cello(
                 design_pipeline.pipeline,
-                design_result,
+                design_result.pipeline_result,
                 requested=run_cello,
                 extension_needed=extension_needed,
             )

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
@@ -494,7 +495,9 @@ def write_generated_ucf(
     description: str | None = None,
     source_label: str | None = None,
 ) -> Path:
-    base_ucf_items = json.loads(base_ucf_path.read_text())
+    text = base_ucf_path.read_text(encoding="utf-8")
+    text = re.sub(r",\s*([}\]])", r"\1", text)
+    base_ucf_items = json.loads(text)
     generated = build_generated_ucf(
         base_ucf_items,
         draft,

@@ -1,14 +1,19 @@
 from __future__ import annotations
 
 import json
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable
 
 
 def _load_json(path: Path) -> list[dict]:
-    with path.open() as handle:
-        return json.load(handle)
+    text = path.read_text(encoding="utf-8")
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        text = re.sub(r",\s*([}\]])", r"\1", text)
+        return json.loads(text)
 
 
 def _gate_types_from_ucf_items(ucf_items: list[dict]) -> tuple[str, ...]:
@@ -21,6 +26,79 @@ def _gate_types_from_ucf_items(ucf_items: list[dict]) -> tuple[str, ...]:
         for gate in logic_constraints.get("available_gates", [])
         if isinstance(gate, dict) and "type" in gate
     )
+
+
+def _resolve_library_roots(
+    cello_root: Path,
+    ucf_root: Path | None = None,
+    input_root: Path | None = None,
+    output_root: Path | None = None,
+) -> tuple[Path, Path, Path]:
+    if ucf_root and input_root and output_root:
+        return ucf_root, input_root, output_root
+
+    candidates = [
+        (
+            cello_root / "sample-input" / "ucf" / "files" / "v2" / "ucf",
+            cello_root / "sample-input" / "ucf" / "files" / "v2" / "input",
+            cello_root / "sample-input" / "ucf" / "files" / "v2" / "output",
+        ),
+        (
+            cello_root / "sample-input" / "DNACompiler",
+            cello_root / "sample-input" / "DNACompiler",
+            cello_root / "sample-input" / "DNACompiler",
+        ),
+        (
+            cello_root / "sample-input" / "ucf",
+            cello_root / "sample-input" / "ucf",
+            cello_root / "sample-input" / "ucf",
+        ),
+    ]
+
+    for cand_ucf, cand_input, cand_output in candidates:
+        if cand_ucf.exists() and cand_input.exists() and cand_output.exists():
+            return cand_ucf, cand_input, cand_output
+
+    searched = "\n".join(
+        f"ucf={u}, input={i}, output={o}" for u, i, o in candidates
+    )
+    raise FileNotFoundError(
+        f"Could not resolve Cello library roots under {cello_root}. Tried:\n{searched}"
+    )
+
+
+def _find_matching_file(root: Path, version: str, kind: str) -> Path | None:
+    exact = list(root.rglob(f"{version}.{kind}.json"))
+    if exact:
+        return exact[0]
+
+    exact_casefold = [
+        p for p in root.rglob("*.json")
+        if p.name.lower() == f"{version}.{kind}.json".lower()
+    ]
+    if exact_casefold:
+        return exact_casefold[0]
+
+    loose = [
+        p for p in root.rglob("*.json")
+        if version.lower() in p.name.lower() and kind.lower() in p.name.lower()
+    ]
+    if loose:
+        return loose[0]
+
+    return None
+
+
+def _project_root_from_cello_root(cello_root: Path) -> Path:
+    return cello_root.parent.parent
+
+
+def _find_baseline_io_file(project_root: Path, version: str, kind: str) -> Path | None:
+    baseline_root = project_root / "docs" / "examples" / "verified-official-baseline"
+    candidate = baseline_root / f"{version}.{kind}.json"
+    if candidate.exists():
+        return candidate
+    return None
 
 
 @dataclass(frozen=True)
@@ -89,34 +167,79 @@ class CelloLibraryIndex:
         self.skipped_records = skipped_records or []
 
     @classmethod
-    def from_repo(cls, cello_root: Path) -> "CelloLibraryIndex":
-        ucf_root = cello_root / "sample-input" / "ucf" / "files" / "v2" / "ucf"
-        input_root = cello_root / "sample-input" / "ucf" / "files" / "v2" / "input"
-        output_root = cello_root / "sample-input" / "ucf" / "files" / "v2" / "output"
+    def from_repo(
+        cls,
+        cello_root: Path,
+        ucf_root: Path | None = None,
+        input_root: Path | None = None,
+        output_root: Path | None = None,
+    ) -> "CelloLibraryIndex":
+        ucf_root, input_root, output_root = _resolve_library_roots(
+            cello_root=cello_root,
+            ucf_root=ucf_root,
+            input_root=input_root,
+            output_root=output_root,
+        )
+
+        project_root = _project_root_from_cello_root(cello_root)
 
         records: list[LibraryRecord] = []
         skipped_records: list[str] = []
-        for ucf_path in sorted(ucf_root.glob("*/*.UCF.json")):
+
+        ucf_files = list(ucf_root.rglob("*.UCF.json"))
+        if not ucf_files:
+            ucf_files = [
+                p for p in ucf_root.rglob("*.json")
+                if "ucf" in p.name.lower()
+            ]
+
+        seen_versions: set[str] = set()
+
+        for ucf_path in sorted(ucf_files):
+            if ucf_path.name.endswith(".UCF.json"):
+                version = ucf_path.name.removesuffix(".UCF.json")
+            else:
+                version = ucf_path.stem
+
+            if version in seen_versions:
+                continue
+            seen_versions.add(version)
+
             chassis = ucf_path.parent.name
-            version = ucf_path.name.removesuffix(".UCF.json")
-            input_path = input_root / chassis / f"{version}.input.json"
-            output_path = output_root / chassis / f"{version}.output.json"
-            if not input_path.exists() or not output_path.exists():
-                skipped_records.append(f"{version}: missing matching input/output files")
+
+            input_path = _find_matching_file(input_root, version, "input")
+            output_path = _find_matching_file(output_root, version, "output")
+
+            if not input_path:
+                input_path = _find_baseline_io_file(project_root, version, "input")
+
+            if not output_path:
+                output_path = _find_baseline_io_file(project_root, version, "output")
+
+            try:
+                ucf_items = _load_json(ucf_path)
+            except json.JSONDecodeError as exc:
+                skipped_records.append(f"{version}: invalid UCF JSON ({exc})")
+                continue
+
+            if not input_path or not output_path:
+                skipped_records.append(
+                    f"{version}: missing matching input/output files"
+                )
                 continue
 
             try:
                 input_items = _load_json(input_path)
                 output_items = _load_json(output_path)
-                ucf_items = _load_json(ucf_path)
             except json.JSONDecodeError as exc:
-                skipped_records.append(f"{version}: invalid JSON ({exc})")
+                skipped_records.append(f"{version}: invalid input/output JSON ({exc})")
                 continue
 
             header = next(
                 (item for item in ucf_items if item.get("collection") == "header"),
                 {},
             )
+
             records.append(
                 LibraryRecord(
                     version=version,
@@ -140,9 +263,11 @@ class CelloLibraryIndex:
             )
 
         if not records:
+            detail = "\n".join(skipped_records) if skipped_records else "No candidate records found."
             raise FileNotFoundError(
-                f"No Cello v2 library records were found under {ucf_root}"
+                f"No Cello v2 library records were found under {ucf_root}.\n{detail}"
             )
+
         return cls(records, skipped_records=skipped_records)
 
     def to_prompt_context(self) -> str:
